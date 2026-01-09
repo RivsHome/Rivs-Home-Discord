@@ -21,6 +21,23 @@ async def hello(ctx):
 # Add personal features like task reminders here
 
 import calendar_utils
+from flask import Flask
+from threading import Thread
+
+app = Flask('')
+
+@app.route('/')
+def home():
+    return "I am alive!"
+
+def run():
+    app.run(host='0.0.0.0', port=8080)
+
+def keep_alive():
+    t = Thread(target=run)
+    t.start()
+
+# ... existing commands ...
 
 @bot.command(name='schedule')
 async def schedule(ctx, *, arg_str):
@@ -75,4 +92,5 @@ async def events(ctx, *, date_str=None):
     except Exception as e:
         await ctx.send(f"An error occurred: {e}")
 
+keep_alive()
 bot.run(TOKEN)
