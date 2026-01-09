@@ -17,6 +17,16 @@ def get_calendar_service():
     Prints the start and name of the next 10 events on the user's calendar.
     """
     creds = None
+    
+    # Check for environment variables and create files if they don't exist (for Render deployment)
+    if not os.path.exists(TOKEN_FILE) and os.getenv('GOOGLE_TOKEN_CONTENT'):
+        with open(TOKEN_FILE, 'w') as token:
+            token.write(os.getenv('GOOGLE_TOKEN_CONTENT'))
+            
+    if not os.path.exists(CREDS_FILE) and os.getenv('GOOGLE_CREDENTIALS_CONTENT'):
+        with open(CREDS_FILE, 'w') as f:
+            f.write(os.getenv('GOOGLE_CREDENTIALS_CONTENT'))
+
     # The file token.json stores the user's access and refresh tokens, and is
     # created automatically when the authorization flow completes for the first
     # time.
@@ -28,9 +38,16 @@ def get_calendar_service():
         if creds and creds.expired and creds.refresh_token:
             creds.refresh(Request())
         else:
+            # If we are here, we need to log in.
+            # On a server (like Render), we cannot open a local browser.
+            # We must rely on the files being present or injected via env vars.
             if not os.path.exists(CREDS_FILE):
-                raise FileNotFoundError(f"Missing {CREDS_FILE}. Please download it from Google Cloud Console.")
-                
+                raise FileNotFoundError(f"Missing {CREDS_FILE} (and no GOOGLE_CREDENTIALS_CONTENT env var).")
+            
+            # Check if we can actually run a local server (simple check: are we on a desktop?)
+            # Usually better to fail or warn if we suspect we are on a server.
+            # For now, we keep the local flow for local testing, but this will hang/fail on Render if reached.
+            
             flow = InstalledAppFlow.from_client_secrets_file(CREDS_FILE, SCOPES)
             creds = flow.run_local_server(port=0)
             
